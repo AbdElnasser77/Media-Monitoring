@@ -1,0 +1,98 @@
+<div class="container">
+  <header class="header">
+    <h1>Content Team - Today</h1>
+    <p>Quick view of today's tasks. Use the day picker to switch.</p>
+  </header>
+
+  <div *ngIf="loading()" class="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading...</p>
+  </div>
+
+  <div *ngIf="!loading() && !error()">
+    <div class="filters">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label for="day">Day</label>
+          <input id="day" type="date" [(ngModel)]="dayModel" />
+        </div>
+        <div class="filter-group">
+          <label>&nbsp;</label>
+          <button class="primary" (click)="applyDayFilter()">Show by Day</button>
+        </div>
+        <div class="filter-group">
+          <a routerLink="/dashboard" class="link">Go to Dashboard →</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card blue">
+        <div class="stat-header">
+          <div class="stat-icon">📊</div>
+          <div class="stat-value">{{ stats().total }}</div>
+        </div>
+        <div class="stat-label">Total Tasks</div>
+        <div class="stat-detail">All tasks</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-header">
+          <div class="stat-icon">✅</div>
+          <div class="stat-value">{{ stats().completed }}</div>
+        </div>
+        <div class="stat-label">Completed</div>
+        <div class="stat-detail">{{ stats().completionRate }}% completion</div>
+      </div>
+      <div class="stat-card orange">
+        <div class="stat-header">
+          <div class="stat-icon">⏳</div>
+          <div class="stat-value">{{ stats().inProgress }}</div>
+        </div>
+        <div class="stat-label">In Progress</div>
+        <div class="stat-detail">Active tasks</div>
+      </div>
+      <div class="stat-card purple">
+        <div class="stat-header">
+          <div class="stat-icon">📅</div>
+          <div class="stat-value">{{ selectedDate() }}</div>
+        </div>
+        <div class="stat-label">Day</div>
+        <div class="stat-detail">Filtered by day</div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="table-title">Tasks ({{ todaysTasks().length }})</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Assigned To</th>
+              <th>Status</th>
+              <th>Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let task of todaysTasks(); trackBy: trackByTask">
+              <td>
+                <div class="cell-title">{{ task.SubTask || task.MainTask || '-' }}</div>
+                <div class="cell-sub" *ngIf="task.Description">{{ task.Description }}</div>
+              </td>
+              <td>{{ task.AssignedTo }}</td>
+              <td>
+                <span class="status-badge" [class.status-completed]="['Done','Completed'].includes(task.Status || '')" [class.status-progress]="['In Progress','Working'].includes(task.Status || '')" [class.status-pending]="!task.Status || ['Pending','To Do'].includes(task.Status || '')">
+                  {{ task.Status || 'Pending' }}
+                </span>
+              </td>
+              <td>{{ task.Date || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="error()" class="error">{{ error() }}</div>
+</div>
+

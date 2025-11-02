@@ -1,0 +1,134 @@
+<div class="container">
+  <header class="header">
+    <h1>Content Team Dashboard</h1>
+    <p>Monitor team progress and performance</p>
+  </header>
+
+  <div *ngIf="loading() && initialLoad()" class="loading">
+    <div class="spinner"></div>
+    <p class="loading-text">Loading dashboard...</p>
+  </div>
+
+  <div *ngIf="!loading() && !error()">
+    <div class="filters">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label>Team Member</label>
+          <select [ngModel]="selectedPerson()" (ngModelChange)="selectedPerson.set($event)">
+            <option value="all">All Members</option>
+            <option *ngFor="let p of people()" [value]="p">{{ p }}</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Month</label>
+          <select [ngModel]="selectedMonth()" (ngModelChange)="selectedMonth.set($event)">
+            <option value="all">All Months</option>
+            <option *ngFor="let m of months()" [value]="m">{{ m }}</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="team-members-grid">
+      <div *ngFor="let member of teamMemberAnalytics(); trackBy: trackByMember" class="member-card">
+        <div class="member-header">
+          <div class="member-avatar">
+            <span class="member-initial">{{ member.name.charAt(0).toUpperCase() }}</span>
+          </div>
+          <div class="member-info">
+            <div class="member-name">{{ member.name }}</div>
+            <div class="member-role">Team Member</div>
+          </div>
+        </div>
+        <div class="member-metrics">
+          <div class="metric-row">
+            <div class="metric-item">
+              <div class="metric-label">Total Tasks</div>
+              <div class="metric-value">{{ member.total }}</div>
+            </div>
+            <div class="metric-item">
+              <div class="metric-label">Completion Rate</div>
+              <div class="metric-value metric-success">{{ member.completionRate }}%</div>
+            </div>
+          </div>
+          <div class="metric-breakdown">
+            <div class="breakdown-item completed">
+              <span class="breakdown-icon">✅</span>
+              <span class="breakdown-count">{{ member.completed }}</span>
+              <span class="breakdown-label">Completed</span>
+            </div>
+            <div class="breakdown-item in-progress">
+              <span class="breakdown-icon">⏳</span>
+              <span class="breakdown-count">{{ member.inProgress }}</span>
+              <span class="breakdown-label">In Progress</span>
+            </div>
+            <div class="breakdown-item pending">
+              <span class="breakdown-icon">📋</span>
+              <span class="breakdown-count">{{ member.pending }}</span>
+              <span class="breakdown-label">Pending</span>
+            </div>
+          </div>
+          <div class="progress-meter">
+            <div class="progress-meter-label">
+              <span>Average Progress</span>
+              <span class="progress-meter-value">{{ member.avgProgress }}%</span>
+            </div>
+            <div class="progress-meter-bar">
+              <div class="progress-meter-fill" [style.width.%]="member.avgProgress"></div>
+            </div>
+          </div>
+          <div class="approval-stats">
+            <div class="approval-item">
+              <span class="approval-label">Copy Approved</span>
+              <span class="approval-count">{{ member.copyApproved }}</span>
+            </div>
+            <div class="approval-item">
+              <span class="approval-label">Creative Approved</span>
+              <span class="approval-count">{{ member.creativeApproved }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <div class="table-title">Tasks</div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Task</th>
+              <th>Assigned To</th>
+              <th>Type</th>
+              <th>Format</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Schedule Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let task of filteredTasks(); trackBy: trackByTask">
+              <td>
+                <div class="cell-title">{{ task.SubTask || task.MainTask || '-' }}</div>
+                <div class="cell-sub" *ngIf="task.Description">{{ task.Description }}</div>
+              </td>
+              <td>{{ task.AssignedTo }}</td>
+              <td>{{ task.Type || '-' }}</td>
+              <td>{{ task.Format || '-' }}</td>
+              <td>
+                <span class="status-badge" [class.status-completed]="['Done','Completed'].includes(task.Status || '')" [class.status-progress]="['In Progress','Working'].includes(task.Status || '')" [class.status-pending]="!task.Status || ['Pending','To Do'].includes(task.Status || '')">
+                  {{ task.Status || 'Pending' }}
+                </span>
+              </td>
+              <td>{{ task.Date || '-' }}</td>
+              <td>{{ task.ScheduleDate || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="error()" class="error">{{ error() }}</div>
+</div>
+
