@@ -1,7 +1,7 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { map } from 'rxjs/operators';
-import { Observable } from 'rxjs';
+import { map, tap, catchError } from 'rxjs/operators';
+import { Observable, of, firstValueFrom } from 'rxjs';
 import { SheetData, Task, LegacyTaskBlock, LegacySubTask } from '../models';
 
 @Injectable({ providedIn: 'root' })
@@ -10,10 +10,59 @@ export class ApiService {
 
   private readonly allTasksSignal = signal<Task[]>([]);
   readonly tasks = computed(() => this.allTasksSignal());
+  private dataLoaded = signal<boolean>(false);
+  private loadingPromise: Promise<void> | null = null;
 
   constructor(private http: HttpClient) {}
 
-  fetch(): Observable<Task[]> {
+  /**
+   * Initialize the service by loading data from the API.
+   * This method is called by APP_INITIALIZER to ensure data is loaded once at app startup.
+   */
+  initialize(): Promise<void> {
+    if (this.loadingPromise) {
+      return this.loadingPromise;
+    }
+
+    this.loadingPromise = firstValueFrom(
+      this.fetch().pipe(
+        tap(tasks => {
+          this.allTasksSignal.set(tasks);
+          this.dataLoaded.set(true);
+          console.log('API data loaded successfully:', tasks.length, 'tasks');
+        }),
+        catchError(error => {
+          console.error('Failed to load API data:', error);
+          this.dataLoaded.set(false);
+          // Return empty array on error so app can still start
+          this.allTasksSignal.set([]);
+          return of([]);
+        }),
+        map(() => void 0) // Return void to match Promise<void>
+      )
+    );
+
+    return this.loadingPromise;
+  }
+
+  /**
+   * Check if data has been loaded
+   */
+  isDataLoaded(): boolean {
+    return this.dataLoaded();
+  }
+
+  /**
+   * Get the current tasks (for components that need direct access)
+   */
+  getCurrentTasks(): Task[] {
+    return this.allTasksSignal();
+  }
+
+  /**
+   * Fetch data from the API (internal method)
+   */
+  private fetch(): Observable<Task[]> {
     return this.http.get<SheetData[]>(this.endpoint).pipe(
       map((sheets) => {
         console.log('RAW API SHEETS', sheets);
@@ -25,10 +74,24 @@ export class ApiService {
     );
   }
 
+  /**
+   * @deprecated Use initialize() instead. This method is kept for backward compatibility but will be removed.
+   * For new code, access data through the tasks signal or getCurrentTasks() method.
+   */
   loadOnce(): Observable<Task[]> {
-    const stream$ = this.fetch();
-    stream$.subscribe({ next: (tasks) => this.allTasksSignal.set(tasks) });
-    return stream$;
+    console.warn('loadOnce() is deprecated. Data is now loaded automatically at app startup.');
+    return new Observable(observer => {
+      if (this.dataLoaded()) {
+        observer.next(this.allTasksSignal());
+        observer.complete();
+      } else {
+        // Wait for initialization to complete
+        this.initialize().then(() => {
+          observer.next(this.allTasksSignal());
+          observer.complete();
+        });
+      }
+    });
   }
 
   private flattenTasks(sheets: SheetData[]): Task[] {

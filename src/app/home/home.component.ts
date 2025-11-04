@@ -50,9 +50,20 @@ export class HomeComponent implements OnInit {
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
-    this.api
-      .loadOnce()
-      .subscribe({
+    // Use data that's already loaded by APP_INITIALIZER
+    if (this.api.isDataLoaded()) {
+      const tasks = this.api.getCurrentTasks();
+      this.tasks.set(tasks);
+      this.loading.set(false);
+      console.log('Loaded tasks from shared data:', tasks.length);
+      console.log('Default filter date:', this.selectedDate());
+      console.log('Filtered tasks on load:', this.todaysTasks().length);
+      if (this.todaysTasks().length === 0 && tasks.length > 0) {
+        console.log('Sample task dates:', tasks.slice(0, 3).map(t => ({ Date: t.Date, ScheduleDate: t.ScheduleDate, DayISO: t.DayISO })));
+      }
+    } else {
+      // Fallback: wait for data to be loaded
+      this.api.loadOnce().subscribe({
         next: (tasks) => {
           this.tasks.set(tasks);
           this.loading.set(false);
@@ -69,6 +80,7 @@ export class HomeComponent implements OnInit {
           console.error(err);
         }
       });
+    }
   }
 
   protected applyDayFilter(): void {

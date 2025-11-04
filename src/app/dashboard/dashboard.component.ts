@@ -46,10 +46,14 @@ export class DashboardComponent implements OnInit {
   constructor(private api: ApiService) {}
 
   ngOnInit(): void {
-    // Fetch data on component start
-    this.api
-      .loadOnce()
-      .subscribe({
+    // Use data that's already loaded by APP_INITIALIZER
+    if (this.api.isDataLoaded()) {
+      this.tasks.set(this.api.getCurrentTasks());
+      this.loading.set(false);
+      this.initialLoad.set(false);
+    } else {
+      // Fallback: wait for data to be loaded
+      this.api.loadOnce().subscribe({
         next: (tasks) => {
           this.tasks.set(tasks);
           this.loading.set(false);
@@ -62,6 +66,7 @@ export class DashboardComponent implements OnInit {
           console.error(err);
         }
       });
+    }
   }
 
   protected trackByTask = (_: number, t: Task) => `${t.SubTask || t.MainTask || ''}|${t.Date || ''}|${t.AssignedTo || ''}`;
